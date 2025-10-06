@@ -1,65 +1,84 @@
-document.addEventListener('DOMContentLoaded', () => {
-    // Mobile menu toggle
-    const hamburger = document.querySelector('.hamburger');
-    const navMain = document.querySelector('.nav-main');
-    
-    if (hamburger && navMain) {
-        hamburger.addEventListener('click', () => {
-            navMain.style.display = navMain.style.display === 'flex' ? 'none' : 'flex';
-        });
-    }
-
-    // Enhanced Slideshow Logic
+// Enhanced Slideshow Logic with Progress Bars
+document.addEventListener('DOMContentLoaded', function() {
     let slideIndex = 0;
     const slides = document.querySelectorAll('.hero-slide');
+    const progressBars = [];
     let slideshowInterval;
     
-    // Create dots if they don't exist
+    // Create progress bars if they don't exist
     if (slides.length > 0) {
-        const slideshowContainer = document.querySelector('.slideshow-container');
-        const dotsContainer = document.createElement('div');
-        dotsContainer.className = 'slideshow-dots';
+        const barsContainer = document.createElement('div');
+        barsContainer.className = 'slideshow-bars';
         
         slides.forEach((_, index) => {
-            const dot = document.createElement('span');
-            dot.className = 'dot';
-            if (index === 0) dot.classList.add('active');
-            dot.addEventListener('click', () => {
+            const barContainer = document.createElement('div');
+            barContainer.className = 'progress-bar-container';
+            if (index === 0) barContainer.classList.add('active');
+            
+            const progressBar = document.createElement('div');
+            progressBar.className = 'progress-bar';
+            if (index === 0) progressBar.classList.add('active');
+            
+            barContainer.appendChild(progressBar);
+            barsContainer.appendChild(barContainer);
+            progressBars.push(progressBar);
+            
+            // Click to navigate
+            barContainer.addEventListener('click', () => {
                 currentSlide(index);
             });
-            dotsContainer.appendChild(dot);
         });
         
-        slideshowContainer.appendChild(dotsContainer);
+        document.querySelector('.slideshow-container').appendChild(barsContainer);
     }
-    
-    const dots = document.querySelectorAll('.dot');
 
     function showSlides() {
-        // Hide all slides
+        // Hide all slides and reset progress bars
         slides.forEach(slide => {
             slide.classList.remove('active');
         });
         
-        // Remove active class from all dots
-        if (dots.length > 0) {
-            dots.forEach(dot => {
-                dot.classList.remove('active');
-            });
-        }
+        progressBars.forEach((bar, index) => {
+            bar.classList.remove('active', 'completed');
+            bar.style.width = '0%';
+            bar.parentElement.classList.remove('active');
+            
+            // Mark previous slides as completed
+            if (index < slideIndex) {
+                bar.classList.add('completed');
+                bar.style.width = '100%';
+            }
+        });
         
         // Increment index
         slideIndex++;
-        if (slideIndex > slides.length) {
-            slideIndex = 1;
+        if (slideIndex >= slides.length) {
+            slideIndex = 0;
         }
         
-        // Show current slide and activate dot
-        if (slides[slideIndex - 1]) {
-            slides[slideIndex - 1].classList.add('active');
+        // Show current slide and activate progress bar
+        if (slides[slideIndex]) {
+            slides[slideIndex].classList.add('active');
         }
-        if (dots[slideIndex - 1]) {
-            dots[slideIndex - 1].classList.add('active');
+        
+        if (progressBars[slideIndex]) {
+            progressBars[slideIndex].classList.add('active');
+            progressBars[slideIndex].parentElement.classList.add('active');
+            progressBars[slideIndex].style.width = '100%';
+        }
+        
+        // Restart animation
+        restartProgressAnimation();
+    }
+
+    function restartProgressAnimation() {
+        progressBars.forEach(bar => {
+            bar.style.animation = 'none';
+            void bar.offsetWidth; // Trigger reflow
+        });
+        
+        if (progressBars[slideIndex]) {
+            progressBars[slideIndex].style.animation = 'progress 4s linear forwards';
         }
     }
 
@@ -67,9 +86,56 @@ document.addEventListener('DOMContentLoaded', () => {
     function currentSlide(n) {
         clearInterval(slideshowInterval);
         slideIndex = n;
-        showSlides();
+        
+        // Hide all slides and reset progress bars
+        slides.forEach(slide => {
+            slide.classList.remove('active');
+        });
+        
+        progressBars.forEach((bar, index) => {
+            bar.classList.remove('active', 'completed');
+            bar.style.width = '0%';
+            bar.style.animation = 'none';
+            bar.parentElement.classList.remove('active');
+            
+            // Mark previous slides as completed
+            if (index < slideIndex) {
+                bar.classList.add('completed');
+                bar.style.width = '100%';
+            }
+        });
+        
+        // Show selected slide and activate progress bar
+        if (slides[slideIndex]) {
+            slides[slideIndex].classList.add('active');
+        }
+        
+        if (progressBars[slideIndex]) {
+            progressBars[slideIndex].classList.add('active');
+            progressBars[slideIndex].parentElement.classList.add('active');
+            progressBars[slideIndex].style.width = '100%';
+        }
+        
+        restartProgressAnimation();
+        
         // Restart the automatic slideshow
-        slideshowInterval = setInterval(showSlides, 5000);
+        slideshowInterval = setInterval(showSlides, 4000);
+    }
+
+    // Pause on hover
+    const slideshowSection = document.querySelector('.slideshow-section');
+    if (slideshowSection) {
+        slideshowSection.addEventListener('mouseenter', () => {
+            progressBars.forEach(bar => {
+                bar.style.animationPlayState = 'paused';
+            });
+        });
+        
+        slideshowSection.addEventListener('mouseleave', () => {
+            progressBars.forEach(bar => {
+                bar.style.animationPlayState = 'running';
+            });
+        });
     }
 
     // Start slideshow if slides exist
@@ -78,107 +144,43 @@ document.addEventListener('DOMContentLoaded', () => {
         if (slides[0]) {
             slides[0].classList.add('active');
         }
+        
         // Start automatic slideshow
-        slideshowInterval = setInterval(showSlides, 5000);
+        slideshowInterval = setInterval(showSlides, 4000);
+        
+        // Start first progress bar animation
+        setTimeout(() => {
+            if (progressBars[0]) {
+                progressBars[0].style.animation = 'progress 4s linear forwards';
+            }
+        }, 100);
     }
 
-    // Add scroll effect to header
-    window.addEventListener('scroll', () => {
-        const header = document.querySelector('.header');
-        if (window.scrollY > 100) {
-            header.style.boxShadow = '0 5px 20px rgba(0, 0, 0, 0.1)';
-            header.style.background = 'rgba(255, 255, 255, 0.95)';
-        } else {
-            header.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.05)';
-            header.style.background = '#fff';
-        }
-    });
-
-    // Newsletter form handling
-    const newsletterForm = document.querySelector('.newsletter-form');
-    if (newsletterForm) {
-        newsletterForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const emailInput = this.querySelector('input[type="email"]');
-            const email = emailInput.value;
-            
-            if (email && validateEmail(email)) {
-                // Visual feedback
-                const button = this.querySelector('button');
-                const originalText = button.textContent;
-                button.textContent = 'Subscribed!';
-                button.style.background = '#4CAF50';
-                
-                setTimeout(() => {
-                    button.textContent = originalText;
-                    button.style.background = '';
-                    this.reset();
-                }, 2000);
+    // Mobile menu toggle and other existing JavaScript...
+    const hamburger = document.querySelector('.hamburger');
+    const navMain = document.querySelector('.nav-main');
+    
+    if (hamburger && navMain) {
+        hamburger.addEventListener('click', function() {
+            navMain.classList.toggle('active');
+            const icon = this.querySelector('i');
+            if (navMain.classList.contains('active')) {
+                icon.classList.remove('fa-bars');
+                icon.classList.add('fa-times');
             } else {
-                // Visual error feedback
-                emailInput.style.border = '1px solid #ff4444';
-                setTimeout(() => {
-                    emailInput.style.border = '';
-                }, 2000);
+                icon.classList.remove('fa-times');
+                icon.classList.add('fa-bars');
             }
         });
     }
 
-    // Email validation helper
-    function validateEmail(email) {
-        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return re.test(email);
-    }
-    
-    // Filter functionality
-    const filterLinks = document.querySelectorAll('.filter-group a');
-    filterLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            // Remove active class from all links
-            filterLinks.forEach(l => l.classList.remove('active'));
-            
-            // Add active class to clicked link
-            this.classList.add('active');
-            
-            // Here you would typically filter products based on the selected category
-            console.log('Filter by:', this.textContent);
-        });
-    });
-
-    // Sorting functionality
-    const sortSelect = document.getElementById('sorting');
-    if (sortSelect) {
-        sortSelect.addEventListener('change', function() {
-            console.log('Sort by:', this.value);
-            // Here you would typically sort the products
-        });
-    }
-
-    // Pagination functionality
-    const paginationLinks = document.querySelectorAll('.pagination a');
-    paginationLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            // Remove active class from all pagination links
-            paginationLinks.forEach(l => l.classList.remove('active'));
-            
-            // Add active class to clicked link
-            this.classList.add('active');
-            
-            // Here you would typically load the corresponding page
-            console.log('Go to page:', this.textContent);
-        });
-    });
+    // Scroll to top functionality...
     const scrollToTopBtn = document.createElement('button');
     scrollToTopBtn.className = 'scroll-to-top';
     scrollToTopBtn.setAttribute('aria-label', 'Scroll to top');
     scrollToTopBtn.innerHTML = '<i class="fas fa-chevron-up"></i>';
     document.body.appendChild(scrollToTopBtn);
 
-    // Show/hide scroll to top button based on scroll position
     function toggleScrollToTop() {
         if (window.pageYOffset > 300) {
             scrollToTopBtn.classList.add('visible');
@@ -187,7 +189,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Scroll to top function
     function scrollToTop() {
         window.scrollTo({
             top: 0,
@@ -195,10 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Event listeners
     window.addEventListener('scroll', toggleScrollToTop);
     scrollToTopBtn.addEventListener('click', scrollToTop);
-
-    // Initial check
     toggleScrollToTop();
 });
